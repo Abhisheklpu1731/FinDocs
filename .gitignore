@@ -1,0 +1,20 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Project data (large; re-creatable from a download script)
+data/raw/
+data/processed/
+
+# Secrets — API keys live here, never commit it
+.env
+
+# macOS junk
+.DS_Store
