@@ -2,10 +2,11 @@ import json
 from pathlib import Path
 
 PAGES_PATH = Path("data/processed/pages.jsonl")
-OUT_PATH = Path("data/processed/chunks_fixed.jsonl")
+OUT_DIR = Path("data/processed")
 
 CHUNK_WORDS = 350    # roughly 500 tokens
-OVERLAP_WORDS = 35   # roughly 50 tokens
+OVERLAP_WORDS = 35   # roughly 50 tokens (fixed strategy only)
+SEPARATORS = ["\n\n", "\n", ". ", " "]   # paragraph, line, sentence, word
 
 
 def load_pages(path: Path) -> list[dict]:
@@ -14,37 +15,89 @@ def load_pages(path: Path) -> list[dict]:
         return [json.loads(line) for line in f]
 
 
+def make_chunk(page: dict, n: int, text: str) -> dict:
+    """Build one chunk record that remembers where it came from."""
+    return {
+        "chunk_id": f"{page['doc_id']}_p{page['page']}_c{n}",
+        "doc_id": page["doc_id"],
+        "page": page["page"],
+        "scanned": page["scanned"],
+        "text": text,
+    }
+
+
+# ---------- Strategy 1: fixed-size ----------
+
 def fixed_chunks(page: dict) -> list[dict]:
-    """Cut one page into overlapping chunks of CHUNK_WORDS words."""
+    """Cut one page into overlapping pieces of CHUNK_WORDS words."""
     words = page["text"].split()
     step = CHUNK_WORDS - OVERLAP_WORDS
     chunks = []
     for n, start in enumerate(range(0, len(words), step)):
         piece = words[start:start + CHUNK_WORDS]
-        chunks.append({
-            "chunk_id": f"{page['doc_id']}_p{page['page']}_c{n}",
-            "doc_id": page["doc_id"],
-            "page": page["page"],
-            "scanned": page["scanned"],
-            "text": " ".join(piece),
-        })
+        chunks.append(make_chunk(page, n, " ".join(piece)))
         if start + CHUNK_WORDS >= len(words):
             break
     return chunks
 
 
+# ---------- Strategy 2: recursive ----------
+
+def split_recursive(text: str, max_words: int, separators: list[str]) -> list[str]:
+    """Split text at the biggest natural break that keeps pieces small enough."""
+    if len(text.split()) <= max_words:
+        return [text]                      # already small enough: done
+
+    sep, smaller_seps = separators[0], separators[1:]
+    parts = text.split(sep)
+
+    pieces = []
+    current = ""
+    for part in parts:
+        candidate = current + sep + part if current else part
+        if len(candidate.split()) <= max_words:
+            current = candidate            # still fits: keep adding
+        else:
+            if current:
+                pieces.append(current)     # save what we have
+            if len(part.split()) > max_words:
+                # this one part is too big on its own: split it more finely
+                pieces.extend(split_recursive(part, max_words, smaller_seps))
+                current = ""
+            else:
+                current = part             # start a new piece with this part
+    if current:
+        pieces.append(current)
+    return pieces
+
+
+def recursive_chunks(page: dict) -> list[dict]:
+    pieces = split_recursive(page["text"], CHUNK_WORDS, SEPARATORS)
+    return [make_chunk(page, n, p.strip()) for n, p in enumerate(pieces) if p.strip()]
+
+
+# ---------- Run all strategies ----------
+
+STRATEGIES = {
+    "fixed": fixed_chunks,
+    "recursive": recursive_chunks,
+}
+
+
 def main() -> None:
     pages = load_pages(PAGES_PATH)
-    all_chunks = []
-    for page in pages:
-        all_chunks.extend(fixed_chunks(page))
+    for name, chunk_fn in STRATEGIES.items():
+        all_chunks = []
+        for page in pages:
+            all_chunks.extend(chunk_fn(page))
 
-    with OUT_PATH.open("w", encoding="utf-8") as f:
-        for chunk in all_chunks:
-            f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
+        out_path = OUT_DIR / f"chunks_{name}.jsonl"
+        with out_path.open("w", encoding="utf-8") as f:
+            for chunk in all_chunks:
+                f.write(json.dumps(chunk, ensure_ascii=False) + "\n")
 
-    avg = sum(len(c["text"].split()) for c in all_chunks) / len(all_chunks)
-    print(f"{len(pages)} pages -> {len(all_chunks)} chunks (avg {avg:.0f} words)")
+        avg = sum(len(c["text"].split()) for c in all_chunks) / len(all_chunks)
+        print(f"{name:<10} {len(all_chunks):>5} chunks (avg {avg:.0f} words) -> {out_path}")
 
 
 if __name__ == "__main__":
