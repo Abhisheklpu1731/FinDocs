@@ -3,7 +3,7 @@ from pathlib import Path
 
 PAGES_PATH = Path("data/processed/pages.jsonl")
 OUT_DIR = Path("data/processed")
-
+MIN_SECTION_WORDS = 40   # sections smaller than this get merged with the next
 CHUNK_WORDS = 350    # roughly 500 tokens
 OVERLAP_WORDS = 35   # roughly 50 tokens (fixed strategy only)
 SEPARATORS = ["\n\n", "\n", ". ", " "]   # paragraph, line, sentence, word
@@ -75,12 +75,62 @@ def recursive_chunks(page: dict) -> list[dict]:
     pieces = split_recursive(page["text"], CHUNK_WORDS, SEPARATORS)
     return [make_chunk(page, n, p.strip()) for n, p in enumerate(pieces) if p.strip()]
 
+# ---------- Strategy 3: heading-based ----------
+
+def is_heading(line: str) -> bool:
+    """Guess whether a line is a section heading."""
+    line = line.strip()
+    words = line.split()
+    if not (1 <= len(words) <= 8):
+        return False                     # headings are short
+    if line.endswith((".", ",", ":", ";")):
+        return False                     # sentences end with punctuation
+    if sum(ch.isdigit() for ch in line) > len(line) / 3:
+        return False                     # mostly numbers = probably a table row
+    return line.isupper() or line.istitle()
+
+
+def heading_chunks(page: dict) -> list[dict]:
+    """Cut a page into sections at each heading, keeping the heading on every piece."""
+    # 1. Group lines into (heading, body) sections
+    sections = []
+    current_heading = ""
+    current_lines = []
+    for line in page["text"].split("\n"):
+        if is_heading(line):
+            if current_lines:
+                sections.append((current_heading, "\n".join(current_lines)))
+            current_heading = line.strip()
+            current_lines = []
+        else:
+            current_lines.append(line)
+    if current_lines:
+        sections.append((current_heading, "\n".join(current_lines)))
+        # 1b. Merge tiny sections into the next one
+    merged = []
+    for heading, body in sections:
+        if merged and len(merged[-1][1].split()) < MIN_SECTION_WORDS:
+            prev_heading, prev_body = merged[-1]
+            merged[-1] = (prev_heading, f"{prev_body}\n{heading}\n{body}".strip())
+        else:
+            merged.append((heading, body))
+    # 2. Split long sections further, and put the heading on each piece
+    chunks = []
+    for heading, body in merged:
+        for piece in split_recursive(body, CHUNK_WORDS, SEPARATORS):
+            piece = piece.strip()
+            if not piece:
+                continue
+            text = f"{heading}\n{piece}" if heading else piece
+            chunks.append(make_chunk(page, len(chunks), text))
+    return chunks
 
 # ---------- Run all strategies ----------
 
 STRATEGIES = {
     "fixed": fixed_chunks,
     "recursive": recursive_chunks,
+    "heading": heading_chunks,
 }
 
 

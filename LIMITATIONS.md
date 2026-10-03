@@ -1,0 +1,2 @@
+- Heading chunker: ~6% of chunks are tiny (page footers, captions, cover taglines).
+- Lenskart: 86 of 203 pages are scanned with poor OCR (mostly financial statements).
