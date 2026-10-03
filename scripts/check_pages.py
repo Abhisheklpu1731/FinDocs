@@ -1,15 +1,17 @@
+
+from pathlib import Path
+
 import pymupdf
 
-PDF_PATH = "data/raw/lenskart_2025.pdf"
-OCR_FONT_HINTS = ("OCR", "GlyphLess")   # font names OCR tools use
+RAW_DIR = Path("data/raw")
+OCR_FONT_HINTS = ("OCR", "GlyphLess")
 
-doc = pymupdf.open(PDF_PATH)
-counts = {"digital": 0, "scanned": 0, "empty": 0}
-scanned_pages = []
-empty_pages = []
 
-for i, page in enumerate(doc, start=1):
+def page_kind(page) -> str:
+    """Classify one page as 'empty', 'scanned' or 'digital'."""
     text = page.get_text()
+    if len(text.strip()) < 50:
+        return "empty"
 
     fonts = set()
     for block in page.get_text("dict")["blocks"]:
@@ -17,18 +19,17 @@ for i, page in enumerate(doc, start=1):
             for span in line["spans"]:
                 fonts.add(span["font"])
 
-    is_ocr = any(hint in font for font in fonts for hint in OCR_FONT_HINTS)
+    if any(hint in font for font in fonts for hint in OCR_FONT_HINTS):
+        return "scanned"
+    return "digital"
 
-    if len(text.strip()) < 50:
-        kind = "empty"
-        empty_pages.append(i)
-    elif is_ocr:
-        kind = "scanned"
-        scanned_pages.append(i)
-    else:
-        kind = "digital"
-    counts[kind] += 1
 
-print(counts)
-print("Scanned pages:", scanned_pages)
-print("Empty pages:", empty_pages)
+for pdf_path in sorted(RAW_DIR.glob("*.pdf")):
+    doc = pymupdf.open(pdf_path)
+    counts = {"digital": 0, "scanned": 0, "empty": 0}
+    for page in doc:
+        counts[page_kind(page)] += 1
+    scanned_pct = 100 * counts["scanned"] / len(doc)
+    print(f"{pdf_path.stem:<20} pages={len(doc):<4} {counts}  scanned={scanned_pct:.0f}%")
+    doc.close()
+EOF
