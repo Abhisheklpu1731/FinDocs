@@ -4,8 +4,8 @@ from pathlib import Path
 PAGES_PATH = Path("data/processed/pages.jsonl")
 OUT_DIR = Path("data/processed")
 MIN_SECTION_WORDS = 40   # sections smaller than this get merged with the next
-CHUNK_WORDS = 350    # roughly 500 tokens
-OVERLAP_WORDS = 35   # roughly 50 tokens (fixed strategy only)
+CHUNK_WORDS = 150   # roughly 500 tokens
+OVERLAP_WORDS = 15   # roughly 50 tokens (fixed strategy only)
 SEPARATORS = ["\n\n", "\n", ". ", " "]   # paragraph, line, sentence, word
 MIN_CHUNK_WORDS = 8   # anything shorter is a footer, header or caption
 
