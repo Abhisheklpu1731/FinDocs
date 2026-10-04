@@ -32,4 +32,3 @@ for pdf_path in sorted(RAW_DIR.glob("*.pdf")):
     scanned_pct = 100 * counts["scanned"] / len(doc)
     print(f"{pdf_path.stem:<20} pages={len(doc):<4} {counts}  scanned={scanned_pct:.0f}%")
     doc.close()
-EOF
