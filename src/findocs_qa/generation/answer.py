@@ -22,16 +22,21 @@ Rules:
 class Answerer:
     """Retrieves the best chunks, then asks the LLM to answer from them with citations."""
 
-    def __init__(self, strategy: str = "recursive"):
-        self.retriever = RerankRetriever(strategy)
+    def __init__(self, strategy: str = "recursive", retriever=None):
+        self.retriever = retriever or RerankRetriever(strategy)
         self.client = OpenAI(
             api_key=os.environ["GROQ_API_KEY"],
             base_url="https://api.groq.com/openai/v1",
         )
         self.model = os.environ["LLM_MODEL"]
 
-    def answer(self, question: str, k: int = 5) -> dict:
-        chunks = self.retriever.search(question, k=k)
+    def answer(
+        self, question: str, k: int = 5, doc_ids: set[str] | None = None, on_step=None
+    ) -> dict:
+        """on_step(name, detail) reports progress: hybrid -> rerank -> generate."""
+        chunks = self.retriever.search(question, k=k, doc_ids=doc_ids, on_step=on_step)
+        if on_step:
+            on_step("generate", f"asking {self.model}")
 
         sources = "\n\n".join(
             f'<source doc_id="{c["doc_id"]}" page="{c["page"]}">\n{c["text"]}\n</source>'

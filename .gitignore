@@ -12,6 +12,7 @@ wheels/
 # Project data (large; re-creatable from a download script)
 data/raw/
 data/processed/
+data/uploads/
 
 # Secrets — API keys live here, never commit it
 .env

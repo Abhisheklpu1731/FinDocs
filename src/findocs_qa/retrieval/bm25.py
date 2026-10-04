@@ -16,17 +16,34 @@ def tokenize(text: str) -> list[str]:
     return re.findall(r"\w+", text.lower())
 
 
+def doc_mask(chunks: list[dict], doc_ids: set[str] | None) -> np.ndarray | None:
+    """True for chunks belonging to the allowed documents (None = no filtering)."""
+    if doc_ids is None:
+        return None
+    return np.array([c["doc_id"] in doc_ids for c in chunks])
+
+
+def top_k(scores: np.ndarray, k: int, mask: np.ndarray | None) -> np.ndarray:
+    """Positions of the k highest scores, ignoring chunks the mask excludes."""
+    if mask is not None:
+        scores = np.where(mask, scores, -np.inf)
+        k = min(k, int(mask.sum()))
+    return np.argsort(-scores)[:k]
+
+
 class BM25Retriever:
     """Builds a keyword index over the chunks once, then answers many searches."""
 
-    def __init__(self, strategy: str = "recursive"):
-        with (DATA_DIR / f"chunks_{strategy}.jsonl").open(encoding="utf-8") as f:
-            self.chunks = [json.loads(line) for line in f]
+    def __init__(self, strategy: str = "recursive", chunks: list[dict] | None = None):
+        if chunks is None:
+            with (DATA_DIR / f"chunks_{strategy}.jsonl").open(encoding="utf-8") as f:
+                chunks = [json.loads(line) for line in f]
+        self.chunks = chunks
         self.bm25 = BM25Okapi([tokenize(c["text"]) for c in self.chunks])
 
-    def search(self, question: str, k: int = 5) -> list[dict]:
+    def search(self, question: str, k: int = 5, doc_ids: set[str] | None = None) -> list[dict]:
         scores = self.bm25.get_scores(tokenize(question))   # one score per chunk
-        top = np.argsort(-scores)[:k]
+        top = top_k(scores, k, doc_mask(self.chunks, doc_ids))
         return [{**self.chunks[i], "score": float(scores[i])} for i in top]
 
 

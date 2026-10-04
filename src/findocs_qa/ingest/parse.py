@@ -20,23 +20,29 @@ def clean(text: str) -> str:
     return text.strip()
 
 
-def parse_pdf(pdf_path: Path) -> list[dict]:
-    """Read one PDF and return one record per non-empty page."""
-    records = []
+def iter_pages(pdf_path: Path, doc_id: str | None = None):
+    """Yield (page_number, total_pages, record) for every page; record is None for empty pages."""
+    doc_id = doc_id or pdf_path.stem
     with pymupdf.open(pdf_path) as doc:
+        total = len(doc)
         for i, page in enumerate(doc, start=1):
             kind = page_kind(page)
             if kind == "empty":
+                yield i, total, None
                 continue
             text = clean(page.get_text("text", sort=True))
-            records.append({
-                "doc_id": pdf_path.stem,
+            yield i, total, {
+                "doc_id": doc_id,
                 "page": i,
                 "scanned": kind == "scanned",
                 "text": text,
                 "n_chars": len(text),
-            })
-    return records
+            }
+
+
+def parse_pdf(pdf_path: Path) -> list[dict]:
+    """Read one PDF and return one record per non-empty page."""
+    return [rec for _, _, rec in iter_pages(pdf_path) if rec is not None]
 
 
 def main() -> None:

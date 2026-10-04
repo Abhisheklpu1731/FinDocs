@@ -10,12 +10,22 @@ RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 class RerankRetriever:
     """Hybrid search for a wide shortlist, then a cross-encoder picks the best."""
 
-    def __init__(self, strategy: str = "recursive"):
-        self.hybrid = HybridRetriever(strategy)
-        self.model = CrossEncoder(RERANK_MODEL)
+    def __init__(self, strategy: str = "recursive", hybrid=None, model=None):
+        self.hybrid = hybrid or HybridRetriever(strategy)
+        self.model = model or CrossEncoder(RERANK_MODEL)
 
-    def search(self, question: str, k: int = 5, pool: int = 20) -> list[dict]:
-        candidates = self.hybrid.search(question, k=pool)
+    def search(
+        self,
+        question: str,
+        k: int = 5,
+        pool: int = 20,
+        doc_ids: set[str] | None = None,
+        on_step=None,
+    ) -> list[dict]:
+        """on_step(name, detail) is called after each stage so a UI can show progress."""
+        candidates = self.hybrid.search(question, k=pool, doc_ids=doc_ids)
+        if on_step:
+            on_step("hybrid", f"{len(candidates)} candidate passages (keyword + semantic)")
 
         pairs = [(question, c["text"]) for c in candidates]
         scores = self.model.predict(pairs)
@@ -25,6 +35,8 @@ class RerankRetriever:
             c["score"] = float(s)
 
         ranked = sorted(candidates, key=lambda c: c["score"], reverse=True)
+        if on_step:
+            on_step("rerank", f"kept the best {min(k, len(ranked))}")
         return ranked[:k]
 
 

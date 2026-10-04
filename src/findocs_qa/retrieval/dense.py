@@ -5,6 +5,8 @@ from pathlib import Path
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
+from findocs_qa.retrieval.bm25 import doc_mask, top_k
+
 DATA_DIR = Path("data/processed")
 MODEL_NAME = "BAAI/bge-small-en-v1.5"
 QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
@@ -13,16 +15,25 @@ QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 class DenseRetriever:
     """Loads chunks + their embeddings once, then answers many searches."""
 
-    def __init__(self, strategy: str = "recursive"):
-        self.model = SentenceTransformer(MODEL_NAME)
-        with (DATA_DIR / f"chunks_{strategy}.jsonl").open(encoding="utf-8") as f:
-            self.chunks = [json.loads(line) for line in f]
-        self.vectors = np.load(DATA_DIR / "embeddings" / f"{strategy}_bge-small.npy")
+    def __init__(
+        self,
+        strategy: str = "recursive",
+        chunks: list[dict] | None = None,
+        vectors: np.ndarray | None = None,
+        model: SentenceTransformer | None = None,
+    ):
+        self.model = model or SentenceTransformer(MODEL_NAME)
+        if chunks is None:
+            with (DATA_DIR / f"chunks_{strategy}.jsonl").open(encoding="utf-8") as f:
+                chunks = [json.loads(line) for line in f]
+            vectors = np.load(DATA_DIR / "embeddings" / f"{strategy}_bge-small.npy")
+        self.chunks = chunks
+        self.vectors = vectors
 
-    def search(self, question: str, k: int = 5) -> list[dict]:
+    def search(self, question: str, k: int = 5, doc_ids: set[str] | None = None) -> list[dict]:
         q = self.model.encode(QUERY_PREFIX + question, normalize_embeddings=True)
         scores = self.vectors @ q                 # one score per chunk
-        top = np.argsort(-scores)[:k]             # positions of the k highest scores
+        top = top_k(scores, k, doc_mask(self.chunks, doc_ids))
         return [{**self.chunks[i], "score": float(scores[i])} for i in top]
 
 

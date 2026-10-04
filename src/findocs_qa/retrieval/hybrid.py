@@ -9,16 +9,18 @@ RRF_K = 60   # standard constant from the original RRF paper
 class HybridRetriever:
     """Runs dense + BM25 search and merges their rankings with Reciprocal Rank Fusion."""
 
-    def __init__(self, strategy: str = "recursive"):
+    def __init__(self, strategy: str = "recursive", dense=None, bm25=None):
         self.retrievers = {
-            "dense": DenseRetriever(strategy),
-            "bm25": BM25Retriever(strategy),
+            "dense": dense or DenseRetriever(strategy),
+            "bm25": bm25 or BM25Retriever(strategy),
         }
 
-    def search(self, question: str, k: int = 5, pool: int = 20) -> list[dict]:
+    def search(
+        self, question: str, k: int = 5, pool: int = 20, doc_ids: set[str] | None = None
+    ) -> list[dict]:
         fused = {}
         for name, retriever in self.retrievers.items():
-            for rank, chunk in enumerate(retriever.search(question, k=pool), start=1):
+            for rank, chunk in enumerate(retriever.search(question, k=pool, doc_ids=doc_ids), start=1):
                 cid = chunk["chunk_id"]
                 if cid not in fused:
                     fused[cid] = {**chunk, "score": 0.0, "found_by": []}
