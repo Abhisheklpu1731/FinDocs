@@ -2,3 +2,4 @@
 - Lenskart: 86 of 203 pages are scanned with poor OCR (mostly financial statements).
 - HDFC PDF renders ₹ via a special font; extracted text shows a backtick (`) instead.
 - Tried frequency-based boilerplate removal; rejected because it also deletes unit labels like (₹ crore).
+- Cross-document leakage: Infosys questions can retrieve HDFC chunks that mention Infosys (fix idea: filter by company).
