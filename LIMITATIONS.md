@@ -3,3 +3,4 @@
 - HDFC PDF renders ₹ via a special font; extracted text shows a backtick (`) instead.
 - Tried frequency-based boilerplate removal; rejected because it also deletes unit labels like (₹ crore).
 - Cross-document leakage: Infosys questions can retrieve HDFC chunks that mention Infosys (fix idea: filter by company).
+- OCR detector misses some scanned pages (e.g. Lenskart p.100 has garbled text but no OCR font name).

@@ -1,7 +1,3 @@
-{"id": "q001", "question": "Who is the CEO of Infosys?", "answer": "Salil Parekh", "doc_id": "infosys_2025", "pages": [12, 180, 362], "type": "fact"}
-{"id": "q002", "question": "What was the standalone net profit of Lenskart in FY25?", "answer": "INR 1,880.72 million", "doc_id": "lenskart_2025", "pages": [1], "type": "number"}
-{"id": "q003", "question": "How many employees does HDFC Bank have?", "answer": "2,14,552 (over 2.14 lakh)", "doc_id": "hdfc_bank_2025", "pages": [223, 525], "type": "number"}
-{"id": "q004", "question": "What was Tesla's revenue in 2024?", "answer": "NOT_FOUND", "doc_id": null, "pages": [], "type": "unanswerable"}
 {"id": "c001", "question": "How many tonnes of waste did HDFC Bank divert from disposal through recycling in FY 2024-25?", "answer": "421.82 tonnes", "doc_id": "hdfc_bank_2025", "pages": [124], "type": "number"}
 {"id": "c002", "question": "When was HDFC Bank founded?", "answer": "1994", "doc_id": "hdfc_bank_2025", "pages": [30], "type": "number"}
 {"id": "c003", "question": "How many shareholders of HDFC Bank were eligible to vote in the postal ballot notice dated November 27, 2024?", "answer": "39,62,399", "doc_id": "hdfc_bank_2025", "pages": [296], "type": "number"}

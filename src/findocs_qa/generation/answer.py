@@ -47,10 +47,13 @@ class Answerer:
             ],
         )
 
+        text = response.choices[0].message.content.replace("【", "[").replace("】", "]")
+
         return {
             "question": question,
-            "answer": response.choices[0].message.content,
+            "answer": text,
             "sources": [(c["doc_id"], c["page"]) for c in chunks],
+            "chunks": chunks,
             "tokens": response.usage.total_tokens,
         }
 
