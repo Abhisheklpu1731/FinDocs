@@ -9,7 +9,9 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "numpy>=2.5.3",
+    "openai>=3.24.0",
     "pymupdf>=1.28.2",
+    "python-dotenv>=1.2.4",
     "rank-bm25>=0.2.2",
     "sentence-transformers>=6.1.0",
 ]
