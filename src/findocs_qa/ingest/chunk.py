@@ -7,7 +7,7 @@ MIN_SECTION_WORDS = 40   # sections smaller than this get merged with the next
 CHUNK_WORDS = 350    # roughly 500 tokens
 OVERLAP_WORDS = 35   # roughly 50 tokens (fixed strategy only)
 SEPARATORS = ["\n\n", "\n", ". ", " "]   # paragraph, line, sentence, word
-
+MIN_CHUNK_WORDS = 8   # anything shorter is a footer, header or caption
 
 def load_pages(path: Path) -> list[dict]:
     """Read pages.jsonl back into a list of dictionaries."""
@@ -139,6 +139,7 @@ def main() -> None:
     for name, chunk_fn in STRATEGIES.items():
         all_chunks = []
         for page in pages:
+            all_chunks = [c for c in all_chunks if len(c["text"].split()) >= MIN_CHUNK_WORDS]
             all_chunks.extend(chunk_fn(page))
 
         out_path = OUT_DIR / f"chunks_{name}.jsonl"
