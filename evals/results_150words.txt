@@ -1,0 +1,16 @@
+49 answerable questions, k=5
+
+strategy   retriever  hit@5    MRR
+---------------------------------
+fixed      dense      0.33   0.20
+fixed      bm25       0.55   0.44
+fixed      hybrid     0.47   0.37
+fixed      rerank     0.51   0.43
+recursive  dense      0.33   0.22
+recursive  bm25       0.51   0.46
+recursive  hybrid     0.47   0.36
+recursive  rerank     0.57   0.42
+heading    dense      0.33   0.24
+heading    bm25       0.53   0.43
+heading    hybrid     0.43   0.32
+heading    rerank     0.49   0.39
