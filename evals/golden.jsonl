@@ -1,0 +1,4 @@
+{"id": "q001", "question": "Who is the CEO of Infosys?", "answer": "Salil Parekh", "doc_id": "infosys_2025", "pages": [12, 180, 362], "type": "fact"}
+{"id": "q002", "question": "What was the standalone net profit of Lenskart in FY25?", "answer": "INR 1,880.72 million", "doc_id": "lenskart_2025", "pages": [1], "type": "number"}
+{"id": "q003", "question": "How many employees does HDFC Bank have?", "answer": "2,14,552 (over 2.14 lakh)", "doc_id": "hdfc_bank_2025", "pages": [223, 525], "type": "number"}
+{"id": "q004", "question": "What was Tesla's revenue in 2024?", "answer": "NOT_FOUND", "doc_id": null, "pages": [], "type": "unanswerable"}
